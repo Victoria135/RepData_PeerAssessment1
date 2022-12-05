@@ -1,16 +1,17 @@
-
 ---
   title: "Reproducible Research: Peer Assessment 1"
-output: 
+  output: 
   html_document: 
   keep_md: true
 ---
 
+## Loading and preprocessing the data
 
-  ## Loading and preprocessing the data
+First of all we need to download the data and unzip files, assign all data sets and set all data formats accordingly, check the percentage of NA data
+
+``` {r echo=TRUE}  
+setwd("C:/Users/rikig/OneDrive/Рабочий стол/Reproducible Research - project 1/")
   
-  
-  setwd("C:/Users/rikig/OneDrive/Рабочий стол/Reproducible Research - project 1/")
 getwd()
 
 filename <- "repdata%2Fdata%2Factivity.zip"
@@ -28,18 +29,24 @@ list.files()
 if (file.exists("repdata%2Fdata%2Factivity.zip")) { 
   unzip(filename) 
 }
-
-activity<-read.csv("activity.csv")
+ 
+activity <- read.csv("activity.csv")
 
 activity$date <- as.Date(activity$date, "%Y-%m-%d")
 
-str(activity)
-
 sum(is.na(activity$steps))/dim(activity)[[1]]
+```
 
   
-  ## What is mean total number of steps taken per day?
-  
+## What is mean total number of steps taken per day?
+
+We need to group the data by date and then summarize the number of steps. Then we build the histogram that shows the stats:
+
+``` {r echo=TRUE} 
+library(magrittr)
+library(dplyr)
+library(ggplot2)
+
 total_by_date <- activity %>% group_by(date) %>% summarize(sum(steps))
 
 colnames(total_by_date) <- c("date", "steps")
@@ -51,10 +58,13 @@ ggplot(total_by_date, aes(x=steps)) +
   ylab("Frequency") +
   ggtitle("Total number of steps taken each day") +
   theme(plot.title = element_text(hjust = 0.5))
+```
+  
+## What is the average daily activity pattern?
 
-  
-  ## What is the average daily activity pattern?
-  
+Now we will check mean and median for the data and make a plot that shows daily stats
+
+``` {r echo=TRUE} 
 stats_by_date <- activity %>% group_by(date) %>% summarize(mean(steps), median(steps))
 
 mean_act <- mean(total_by_date$steps, na.rm = TRUE)
@@ -62,6 +72,7 @@ mean_act <- mean(total_by_date$steps, na.rm = TRUE)
 
 median_act <- median(total_by_date$steps, na.rm = TRUE)
 # [1] 10765
+
 
 activity_average <- aggregate(steps ~ interval, data = activity, mean, na.rm = TRUE)
 
@@ -72,14 +83,16 @@ ggplot(activity_average, aes(x=interval, y=steps)) +
   ggtitle(" Time series plot of the average number of steps taken") +
   theme(plot.title = element_text(hjust = 0.5))
 
+
 max_steps_int <- activity_average[which.max(activity_average$steps),1]
-# [1] 835
+ # [1] 835
+```
 
+## Imputing missing values
 
-  ## Imputing missing values
-
+``` {r echo=TRUE} 
 activty_na <- sum(is.na(activity$steps))
-# [1] 2304
+ # [1] 2304
 
 for (i in 1:nrow(activity)) {
   if(is.na(activity$steps[i])) {
@@ -98,13 +111,17 @@ ggplot(total_without_na, aes(x=steps)) +
   ylab("Frequency") +
   ggtitle("Total number of steps taken each day after missing values are imputed") +
   theme(plot.title = element_text(hjust = 0.5))
+```
 
+## Are there differences in activity patterns between weekdays and weekends?
 
-  ## Are there differences in activity patterns between weekdays and weekends?
+We will add a column that will shows if the date is weekday or weekend. Then we will build another dataset for weekends and weekday which shows the frequency of the steps for each interval
 
+``` {r echo=TRUE} 
 activity[,4] <- weekdays(activity$date)
 
 names(activity) <- c("steps", "date", "interval", "weekday")
+
 
 for (i in 1:nrow(activity)) {
   if (activity[i,]$weekday %in% c("суббота","воскресенье")) {
@@ -123,3 +140,4 @@ library(lattice)
 
 xyplot(steps ~ interval | weekday, activity_by_day, type = "l", layout = c(1, 2), 
        xlab = "Interval", ylab = "Number of steps")
+```
